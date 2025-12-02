@@ -1,0 +1,179 @@
+# Docker Compose for Marketplace Microservices
+# This file orchestrates all services and their dependencies
+
+version: '3.8'
+
+services:
+  # ===========================================
+  # Infrastructure Services (Databases & Cache)
+  # ===========================================
+
+  # PostgreSQL for Member and Cart services
+  postgres:
+    image: postgres:16-alpine
+    container_name: marketplace-postgres
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-postgres}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres123}
+      # Create multiple databases
+      POSTGRES_MULTIPLE_DATABASES: marketplace_member,marketplace_cart
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+      - ./docker/postgres-init:/docker-entrypoint-initdb.d
+    networks:
+      - marketplace-network
+    healthcheck:
+      test: [ "CMD-SHELL", "pg_isready -U postgres" ]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # MongoDB for Product service
+  mongodb:
+    image: mongo:7
+    container_name: marketplace-mongodb
+    environment:
+      MONGO_INITDB_ROOT_USERNAME: ${MONGO_USER:-mongo}
+      MONGO_INITDB_ROOT_PASSWORD: ${MONGO_PASSWORD:-mongo123}
+      MONGO_INITDB_DATABASE: marketplace_product
+    ports:
+      - "${MONGO_PORT:-27017}:27017"
+    volumes:
+      - mongodb_data:/data/db
+      - ./docker/mongo-init:/docker-entrypoint-initdb.d
+    networks:
+      - marketplace-network
+    healthcheck:
+      test: echo 'db.runCommand("ping").ok' | mongosh localhost:27017/test --quiet
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    restart: unless-stopped
+
+  # Redis for caching (optional but recommended)
+  redis:
+    image: redis:7-alpine
+    container_name: marketplace-redis
+    ports:
+      - "${REDIS_PORT:-6379}:6379"
+    volumes:
+      - redis_data:/data
+    networks:
+      - marketplace-network
+    healthcheck:
+      test: [ "CMD", "redis-cli", "ping" ]
+      interval: 10s
+      timeout: 3s
+      retries: 5
+    restart: unless-stopped
+    command: redis-server --appendonly yes
+
+  # ===========================================
+  # Microservices
+  # ===========================================
+
+  # Member Service - User registration and authentication
+  member-service:
+    build:
+      context: .
+      dockerfile: member/Dockerfile
+    container_name: marketplace-member
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/marketplace_member
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-postgres123}
+      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-this-in-production-minimum-256-bits-required-for-HS256-algorithm}
+      JWT_EXPIRATION: ${JWT_EXPIRATION:-86400000}
+    ports:
+      - "${MEMBER_PORT:-8081}:8081"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - marketplace-network
+    restart: unless-stopped
+
+  # Product Service - Product catalog management
+  product-service:
+    build:
+      context: .
+      dockerfile: product/Dockerfile
+    container_name: marketplace-product
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATA_MONGODB_URI: mongodb://${MONGO_USER:-mongo}:${MONGO_PASSWORD:-mongo123}@mongodb:27017/marketplace_product?authSource=admin
+    ports:
+      - "${PRODUCT_PORT:-8082}:8082"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+    networks:
+      - marketplace-network
+    restart: unless-stopped
+
+  # Cart Service - Shopping cart management
+  cart-service:
+    build:
+      context: .
+      dockerfile: cart/Dockerfile
+    container_name: marketplace-cart
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      SPRING_DATASOURCE_URL: jdbc:postgresql://postgres:5432/marketplace_cart
+      SPRING_DATASOURCE_USERNAME: ${POSTGRES_USER:-postgres}
+      SPRING_DATASOURCE_PASSWORD: ${POSTGRES_PASSWORD:-postgres123}
+      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-this-in-production-minimum-256-bits-required-for-HS256-algorithm}
+    ports:
+      - "${CART_PORT:-8083}:8083"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    networks:
+      - marketplace-network
+    restart: unless-stopped
+
+  # API Gateway - Single entry point for all services
+  api-gateway:
+    build:
+      context: .
+      dockerfile: api-gateway/Dockerfile
+    container_name: marketplace-gateway
+    environment:
+      SPRING_PROFILES_ACTIVE: docker
+      JWT_SECRET: ${JWT_SECRET:-your-secret-key-change-this-in-production-minimum-256-bits-required-for-HS256-algorithm}
+      # Service URLs (using Docker service names)
+      MEMBER_SERVICE_URL: http://member-service:8081
+      PRODUCT_SERVICE_URL: http://product-service:8082
+      CART_SERVICE_URL: http://cart-service:8083
+    ports:
+      - "${GATEWAY_PORT:-8080}:8080"
+    depends_on:
+      - member-service
+      - product-service
+      - cart-service
+    networks:
+      - marketplace-network
+    restart: unless-stopped
+
+# ===========================================
+# Networks
+# ===========================================
+networks:
+  marketplace-network:
+    driver: bridge
+    name: marketplace-network
+
+# ===========================================
+# Volumes for data persistence
+# ===========================================
+volumes:
+  postgres_data:
+    name: marketplace-postgres-data
+  mongodb_data:
+    name: marketplace-mongodb-data
+  redis_data:
+    name: marketplace-redis-data
