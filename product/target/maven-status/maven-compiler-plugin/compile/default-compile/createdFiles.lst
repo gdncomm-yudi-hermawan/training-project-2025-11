@@ -1,0 +1,6 @@
+com\marketplace\product\repository\ProductRepository.class
+com\marketplace\product\service\ProductService.class
+com\marketplace\product\controller\ProductController.class
+com\marketplace\product\document\Product$ProductBuilder.class
+com\marketplace\product\document\Product.class
+com\marketplace\product\ProductApplication.class

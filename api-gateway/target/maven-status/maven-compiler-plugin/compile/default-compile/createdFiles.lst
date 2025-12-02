@@ -1,0 +1,3 @@
+com\marketplace\gateway\filter\AuthFilter.class
+com\marketplace\gateway\util\JwtUtil.class
+com\marketplace\gateway\ApiGatewayApplication.class
