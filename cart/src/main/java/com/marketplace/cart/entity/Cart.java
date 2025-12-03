@@ -24,6 +24,7 @@ public class Cart {
     @Column(unique = true, nullable = false)
     private String username; // Using username to link with Member
 
+    @Builder.Default
     @OneToMany(cascade = CascadeType.ALL, orphanRemoval = true)
     @JoinColumn(name = "cart_id")
     private List<CartItem> items = new ArrayList<>();
