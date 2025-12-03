@@ -28,7 +28,7 @@
         <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
         
         <!-- Spring Boot Version -->
-        <spring-boot.version>3.5.8</spring-boot.version>
+        <spring-boot.version>3.4.1</spring-boot.version>
         <spring-cloud.version>2024.0.0</spring-cloud.version>
         
         <!-- Dependency Versions -->
