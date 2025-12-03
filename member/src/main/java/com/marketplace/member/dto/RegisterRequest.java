@@ -10,6 +10,7 @@ public class RegisterRequest {
     private String username;
 
     @NotBlank
+    @com.marketplace.member.validation.ValidPassword
     private String password;
 
     @Email

@@ -1,3 +1,12 @@
-com\marketplace\gateway\filter\AuthFilter.class
-com\marketplace\gateway\util\JwtUtil.class
+com\marketplace\gateway\constant\GatewayConstants.class
+com\marketplace\gateway\filter\JwtAuthenticationFilter.class
+com\marketplace\gateway\constant\GatewayConstants$ErrorMessages.class
+com\marketplace\gateway\config\GatewayConfigProperties.class
+com\marketplace\gateway\filter\JwtAuthenticationFilter$Config.class
+com\marketplace\gateway\config\GatewayConfigProperties$RateLimit.class
+com\marketplace\gateway\constant\GatewayConstants$Routes.class
+com\marketplace\gateway\exception\InvalidTokenException.class
+com\marketplace\gateway\config\GatewayConfigProperties$Routing.class
+com\marketplace\gateway\constant\GatewayConstants$Headers.class
+com\marketplace\gateway\exception\GlobalExceptionHandler.class
 com\marketplace\gateway\ApiGatewayApplication.class

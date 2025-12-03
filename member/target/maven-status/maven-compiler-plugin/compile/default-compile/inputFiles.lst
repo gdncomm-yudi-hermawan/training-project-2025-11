@@ -1,3 +1,4 @@
+D:\code\blibli\training\project\training-project-2025-11\member\src\main\java\com\marketplace\member\config\MemberConfigProperties.java
 D:\code\blibli\training\project\training-project-2025-11\member\src\main\java\com\marketplace\member\config\SecurityConfig.java
 D:\code\blibli\training\project\training-project-2025-11\member\src\main\java\com\marketplace\member\constant\MemberConstants.java
 D:\code\blibli\training\project\training-project-2025-11\member\src\main\java\com\marketplace\member\controller\MemberController.java
@@ -13,3 +14,5 @@ D:\code\blibli\training\project\training-project-2025-11\member\src\main\java\co
 D:\code\blibli\training\project\training-project-2025-11\member\src\main\java\com\marketplace\member\MemberApplication.java
 D:\code\blibli\training\project\training-project-2025-11\member\src\main\java\com\marketplace\member\repository\MemberRepository.java
 D:\code\blibli\training\project\training-project-2025-11\member\src\main\java\com\marketplace\member\service\MemberService.java
+D:\code\blibli\training\project\training-project-2025-11\member\src\main\java\com\marketplace\member\validation\PasswordValidator.java
+D:\code\blibli\training\project\training-project-2025-11\member\src\main\java\com\marketplace\member\validation\ValidPassword.java
