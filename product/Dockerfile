@@ -5,18 +5,11 @@ FROM maven:3.9-eclipse-temurin-21 AS builder
 # Set working directory
 WORKDIR /build
 
-# Copy parent POM first for better caching
-COPY pom.xml .
-
-# Copy common-utils module
-COPY common-utils ./common-utils
-
-# Copy product service
-COPY product ./product
+# Copy the entire project to satisfy parent POM reactor requirements
+COPY . .
 
 # Build the application
 # Skip tests during Docker build for faster builds
-# Tests should be run in CI/CD pipeline
 RUN mvn clean package -pl product -am -DskipTests
 
 # Stage 2: Runtime with JRE (smaller image)
