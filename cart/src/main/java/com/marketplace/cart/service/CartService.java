@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.Optional;
+import java.util.UUID;
 
 @Slf4j
 @Service
@@ -20,13 +21,13 @@ public class CartService {
     private final CartRepository cartRepository;
 
     @Transactional
-    public Cart addToCart(String username, AddToCartRequest request) {
-        log.info("Adding item to cart for user: {}, product: {}", username, request.getProductId());
+    public Cart addToCart(UUID userId, AddToCartRequest request) {
+        log.info("Adding item to cart for user: {}, product: {}", userId, request.getProductId());
 
-        Cart cart = cartRepository.findByUsername(username)
+        Cart cart = cartRepository.findByUserId(userId)
                 .orElseGet(() -> {
-                    log.info("Creating new cart for user: {}", username);
-                    return Cart.builder().username(username).build();
+                    log.info("Creating new cart for user: {}", userId);
+                    return Cart.builder().userId(userId).build();
                 });
 
         Optional<CartItem> existingItem = cart.getItems().stream()
@@ -49,37 +50,37 @@ public class CartService {
         }
 
         Cart savedCart = cartRepository.save(cart);
-        log.info("Cart saved successfully for user: {}", username);
+        log.info("Cart saved successfully for user: {}", userId);
         return savedCart;
     }
 
-    public Cart getCart(String username) {
-        log.info("Fetching cart for user: {}", username);
-        return cartRepository.findByUsername(username)
+    public Cart getCart(UUID userId) {
+        log.info("Fetching cart for user: {}", userId);
+        return cartRepository.findByUserId(userId)
                 .orElseGet(() -> {
-                    log.info("No cart found for user: {}, returning empty cart", username);
-                    return Cart.builder().username(username).build();
+                    log.info("No cart found for user: {}, returning empty cart", userId);
+                    return Cart.builder().userId(userId).build();
                 });
     }
 
     @Transactional
-    public Cart removeFromCart(String username, String productId) {
-        log.info("Removing product {} from cart for user: {}", productId, username);
+    public Cart removeFromCart(UUID userId, String productId) {
+        log.info("Removing product {} from cart for user: {}", productId, userId);
 
-        Cart cart = cartRepository.findByUsername(username)
-                .orElseThrow(() -> new CartNotFoundException(username));
+        Cart cart = cartRepository.findByUserId(userId)
+                .orElseThrow(() -> new CartNotFoundException("Cart not found for user: " + userId));
 
         int initialSize = cart.getItems().size();
         cart.getItems().removeIf(item -> item.getProductId().equals(productId));
 
         if (cart.getItems().size() == initialSize) {
-            log.warn("Product {} not found in cart for user: {}", productId, username);
+            log.warn("Product {} not found in cart for user: {}", productId, userId);
         } else {
-            log.info("Removed product {} from cart for user: {}", productId, username);
+            log.info("Removed product {} from cart for user: {}", productId, userId);
         }
 
         Cart savedCart = cartRepository.save(cart);
-        log.info("Cart updated successfully for user: {}", username);
+        log.info("Cart updated successfully for user: {}", userId);
         return savedCart;
     }
 }

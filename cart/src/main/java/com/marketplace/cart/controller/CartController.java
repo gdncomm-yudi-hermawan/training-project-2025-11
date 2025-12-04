@@ -2,17 +2,23 @@ package com.marketplace.cart.controller;
 
 import com.marketplace.cart.dto.AddToCartRequest;
 import com.marketplace.cart.dto.response.CartResponse;
+import com.marketplace.cart.entity.Cart;
 import com.marketplace.cart.mapper.CartMapper;
 import com.marketplace.cart.service.CartService;
 import com.marketplace.common.dto.ApiResponse;
-import com.marketplace.common.util.JwtUtil;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.http.HttpHeaders;
+import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.UUID;
+
+/**
+ * Cart controller handles shopping cart operations
+ * Expects X-User-Id header from API Gateway (after JWT validation)
+ */
 @Slf4j
 @RestController
 @RequestMapping("/api/cart")
@@ -20,53 +26,49 @@ import org.springframework.web.bind.annotation.*;
 public class CartController {
 
     private final CartService cartService;
-    private final JwtUtil jwtUtil;
 
-    @PostMapping
+    private static final String USER_ID_HEADER = "X-User-Id";
+
+    @PostMapping("/add")
     public ResponseEntity<ApiResponse<CartResponse>> addToCart(
-            @RequestHeader(HttpHeaders.AUTHORIZATION) String token,
+            @RequestHeader(USER_ID_HEADER) String userIdHeader,
             @Valid @RequestBody AddToCartRequest request) {
 
-        String username = extractUsername(token);
-        log.info("Add to cart request from user: {}", username);
+        UUID userId = UUID.fromString(userIdHeader);
+        log.info("Add to cart request for user: {}, product: {}", userId, request.getProductId());
 
-        CartResponse cartResponse = CartMapper.toCartResponse(
-                cartService.addToCart(username, request));
+        Cart cart = cartService.addToCart(userId, request);
+        CartResponse response = CartMapper.toCartResponse(cart);
 
-        return ResponseEntity.ok(ApiResponse.success("Item added to cart successfully", cartResponse));
+        return ResponseEntity
+                .status(HttpStatus.CREATED)
+                .body(ApiResponse.success("Item added to cart successfully", response));
     }
 
     @GetMapping
     public ResponseEntity<ApiResponse<CartResponse>> getCart(
-            @RequestHeader(HttpHeaders.AUTHORIZATION) String token) {
+            @RequestHeader(USER_ID_HEADER) String userIdHeader) {
 
-        String username = extractUsername(token);
-        log.info("Get cart request from user: {}", username);
+        UUID userId = UUID.fromString(userIdHeader);
+        log.info("Get cart request for user: {}", userId);
 
-        CartResponse cartResponse = CartMapper.toCartResponse(
-                cartService.getCart(username));
+        Cart cart = cartService.getCart(userId);
+        CartResponse response = CartMapper.toCartResponse(cart);
 
-        return ResponseEntity.ok(ApiResponse.success(cartResponse));
+        return ResponseEntity.ok(ApiResponse.success("Cart retrieved successfully", response));
     }
 
     @DeleteMapping("/{productId}")
     public ResponseEntity<ApiResponse<CartResponse>> removeFromCart(
-            @RequestHeader(HttpHeaders.AUTHORIZATION) String token,
+            @RequestHeader(USER_ID_HEADER) String userIdHeader,
             @PathVariable String productId) {
 
-        String username = extractUsername(token);
-        log.info("Remove from cart request from user: {}, product: {}", username, productId);
+        UUID userId = UUID.fromString(userIdHeader);
+        log.info("Remove from cart request for user: {}, product: {}", userId, productId);
 
-        CartResponse cartResponse = CartMapper.toCartResponse(
-                cartService.removeFromCart(username, productId));
+        Cart cart = cartService.removeFromCart(userId, productId);
+        CartResponse response = CartMapper.toCartResponse(cart);
 
-        return ResponseEntity.ok(ApiResponse.success("Item removed from cart successfully", cartResponse));
-    }
-
-    private String extractUsername(String token) {
-        if (token != null && token.startsWith("Bearer ")) {
-            return jwtUtil.extractUsername(token.substring(7));
-        }
-        throw new RuntimeException("Invalid token");
+        return ResponseEntity.ok(ApiResponse.success("Item removed from cart successfully", response));
     }
 }
