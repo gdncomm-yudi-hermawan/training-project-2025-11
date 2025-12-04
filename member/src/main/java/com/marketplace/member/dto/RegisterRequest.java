@@ -4,18 +4,19 @@ import jakarta.validation.constraints.Email;
 import jakarta.validation.constraints.NotBlank;
 import lombok.Data;
 
+/**
+ * Request DTO for member registration.
+ * Email is used as the login identifier.
+ */
 @Data
 public class RegisterRequest {
-    @NotBlank
-    private String username;
+    @Email(message = "Invalid email format")
+    @NotBlank(message = "Email is required")
+    private String email;
 
-    @NotBlank
+    @NotBlank(message = "Password is required")
     @com.marketplace.member.validation.ValidPassword
     private String password;
-
-    @Email
-    @NotBlank
-    private String email;
 
     private String fullName;
     private String address;

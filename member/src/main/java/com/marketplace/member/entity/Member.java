@@ -22,9 +22,6 @@ public class Member {
     @GeneratedValue(strategy = GenerationType.UUID)
     private UUID id;
 
-    @Column(unique = true, nullable = false)
-    private String username;
-
     @Column(nullable = false)
     private String passwordHash;
 
@@ -35,6 +32,7 @@ public class Member {
 
     private String address;
 
+    @Column(unique = true)
     private String phoneNumber;
 
     @ElementCollection(fetch = FetchType.EAGER)

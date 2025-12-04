@@ -1,17 +1,22 @@
 package com.marketplace.cart.command;
 
+import com.marketplace.cart.client.ProductServiceClient;
+import com.marketplace.cart.command.impl.AddToCartCommandImpl;
+import com.marketplace.cart.command.impl.GetCartCommandImpl;
+import com.marketplace.cart.command.impl.RemoveFromCartCommandImpl;
 import com.marketplace.cart.dto.AddToCartRequest;
 import com.marketplace.cart.dto.request.AddToCartCommandRequest;
 import com.marketplace.cart.dto.request.GetCartRequest;
 import com.marketplace.cart.dto.request.RemoveFromCartRequest;
 import com.marketplace.cart.dto.response.CartResponse;
+import com.marketplace.cart.dto.response.ProductDetailsResponse;
 import com.marketplace.cart.entity.Cart;
 import com.marketplace.cart.entity.CartItem;
 import com.marketplace.cart.exception.CartNotFoundException;
 import com.marketplace.cart.repository.CartRepository;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.junit.jupiter.api.extension.ExtendWith;
-import org.mockito.InjectMocks;
 import org.mockito.Mock;
 import org.mockito.junit.jupiter.MockitoExtension;
 
@@ -30,28 +35,39 @@ class CartCommandTest {
     @Mock
     private CartRepository cartRepository;
 
-    @InjectMocks
-    private AddToCartCommand addToCartCommand;
+    @Mock
+    private ProductServiceClient productServiceClient;
 
-    @InjectMocks
-    private GetCartCommand getCartCommand;
+    private AddToCartCommandImpl addToCartCommand;
+    private GetCartCommandImpl getCartCommand;
+    private RemoveFromCartCommandImpl removeFromCartCommand;
 
-    @InjectMocks
-    private RemoveFromCartCommand removeFromCartCommand;
+    @BeforeEach
+    void setUp() {
+        addToCartCommand = new AddToCartCommandImpl(cartRepository, productServiceClient);
+        getCartCommand = new GetCartCommandImpl(cartRepository);
+        removeFromCartCommand = new RemoveFromCartCommandImpl(cartRepository);
+    }
 
     @Test
     void addToCart_NewCart_Success() {
         UUID userId = UUID.randomUUID();
         AddToCartRequest addRequest = new AddToCartRequest();
         addRequest.setProductId("p1");
-        addRequest.setProductName("Product 1");
-        addRequest.setPrice(BigDecimal.TEN);
         addRequest.setQuantity(1);
 
         AddToCartCommandRequest request = AddToCartCommandRequest.builder()
                 .userId(userId)
                 .addToCartRequest(addRequest)
                 .build();
+
+        // Mock product service response
+        ProductDetailsResponse productDetails = ProductDetailsResponse.builder()
+                .id("p1")
+                .name("Product 1")
+                .price(BigDecimal.TEN)
+                .build();
+        when(productServiceClient.getProductById("p1")).thenReturn(productDetails);
 
         when(cartRepository.findByUserId(userId)).thenReturn(Optional.empty());
         when(cartRepository.save(any(Cart.class))).thenAnswer(invocation -> invocation.getArgument(0));
@@ -62,6 +78,8 @@ class CartCommandTest {
         assertEquals(userId, result.getUserId());
         assertEquals(1, result.getItems().size());
         assertEquals("p1", result.getItems().get(0).getProductId());
+        assertEquals("Product 1", result.getItems().get(0).getProductName());
+        verify(productServiceClient).getProductById("p1");
     }
 
     @Test
@@ -69,14 +87,20 @@ class CartCommandTest {
         UUID userId = UUID.randomUUID();
         AddToCartRequest addRequest = new AddToCartRequest();
         addRequest.setProductId("p2");
-        addRequest.setProductName("Product 2");
-        addRequest.setPrice(BigDecimal.TEN);
         addRequest.setQuantity(1);
 
         AddToCartCommandRequest request = AddToCartCommandRequest.builder()
                 .userId(userId)
                 .addToCartRequest(addRequest)
                 .build();
+
+        // Mock product service response
+        ProductDetailsResponse productDetails = ProductDetailsResponse.builder()
+                .id("p2")
+                .name("Product 2")
+                .price(BigDecimal.TEN)
+                .build();
+        when(productServiceClient.getProductById("p2")).thenReturn(productDetails);
 
         Cart existingCart = Cart.builder()
                 .userId(userId)
@@ -90,6 +114,7 @@ class CartCommandTest {
 
         assertEquals(1, result.getItems().size());
         assertEquals("p2", result.getItems().get(0).getProductId());
+        verify(productServiceClient).getProductById("p2");
     }
 
     @Test
@@ -103,6 +128,14 @@ class CartCommandTest {
                 .userId(userId)
                 .addToCartRequest(addRequest)
                 .build();
+
+        // Mock product service response
+        ProductDetailsResponse productDetails = ProductDetailsResponse.builder()
+                .id("p1")
+                .name("Product 1")
+                .price(BigDecimal.TEN)
+                .build();
+        when(productServiceClient.getProductById("p1")).thenReturn(productDetails);
 
         CartItem existingItem = CartItem.builder()
                 .productId("p1")
@@ -122,6 +155,7 @@ class CartCommandTest {
 
         assertEquals(1, result.getItems().size());
         assertEquals(3, result.getItems().get(0).getQuantity());
+        verify(productServiceClient).getProductById("p1");
     }
 
     @Test

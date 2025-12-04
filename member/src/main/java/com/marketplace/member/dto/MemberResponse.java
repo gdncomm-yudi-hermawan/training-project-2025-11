@@ -5,11 +5,13 @@ import lombok.Data;
 
 import java.util.UUID;
 
+/**
+ * Response DTO for member information.
+ */
 @Data
 @Builder
 public class MemberResponse {
     private UUID id;
-    private String username;
     private String email;
     private String fullName;
     private String address;

@@ -1,7 +1,6 @@
-package com.marketplace.member.exception;
+package com.marketplace.common.exception;
 
 import com.marketplace.common.dto.ErrorResponse;
-import com.marketplace.common.exception.BaseException;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.http.HttpStatus;
@@ -15,7 +14,9 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Global exception handler for Member Service
+ * Global exception handler for Spring MVC services.
+ * Catches all exceptions and returns standardized error responses.
+ * Note: API Gateway uses a separate WebFlux-based handler.
  */
 @Slf4j
 @RestControllerAdvice
