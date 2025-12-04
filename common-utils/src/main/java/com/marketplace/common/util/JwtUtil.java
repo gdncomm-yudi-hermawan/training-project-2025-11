@@ -6,6 +6,7 @@ import io.jsonwebtoken.security.Keys;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnProperty;
 import org.springframework.stereotype.Component;
 
 import java.util.List;
@@ -21,8 +22,11 @@ import java.util.function.Function;
 /**
  * Shared JWT utility class for token generation and validation.
  * Used across Member Service, Cart Service, and API Gateway.
+ * 
+ * Only instantiated when jwt.secret property is defined.
  */
 @Component
+@ConditionalOnProperty(name = "jwt.secret")
 public class JwtUtil {
 
     private static final Logger log = LoggerFactory.getLogger(JwtUtil.class);

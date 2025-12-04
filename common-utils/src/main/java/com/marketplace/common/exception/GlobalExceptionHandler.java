@@ -3,6 +3,8 @@ package com.marketplace.common.exception;
 import com.marketplace.common.dto.ErrorResponse;
 import jakarta.servlet.http.HttpServletRequest;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication;
+import org.springframework.boot.autoconfigure.condition.ConditionalOnWebApplication.Type;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.validation.FieldError;
@@ -14,12 +16,15 @@ import java.util.ArrayList;
 import java.util.List;
 
 /**
- * Global exception handler for Spring MVC services.
+ * Global exception handler for Spring MVC (servlet-based) services only.
  * Catches all exceptions and returns standardized error responses.
- * Note: API Gateway uses a separate WebFlux-based handler.
+ * 
+ * This handler is conditionally enabled only for SERVLET applications.
+ * API Gateway uses WebFlux and has its own reactive exception handler.
  */
 @Slf4j
 @RestControllerAdvice
+@ConditionalOnWebApplication(type = Type.SERVLET)
 public class GlobalExceptionHandler {
 
     /**
