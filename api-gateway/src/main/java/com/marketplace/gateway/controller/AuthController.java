@@ -1,6 +1,9 @@
 package com.marketplace.gateway.controller;
 
+import com.marketplace.common.command.ReactiveCommand;
+import com.marketplace.common.command.ReactiveCommandInvoker;
 import com.marketplace.common.dto.ApiResponse;
+import com.marketplace.gateway.command.LoginCommand;
 import com.marketplace.gateway.dto.LoginRequest;
 import com.marketplace.gateway.dto.LoginResponse;
 import com.marketplace.gateway.service.AuthService;
@@ -27,61 +30,64 @@ import reactor.core.publisher.Mono;
 @RequiredArgsConstructor
 public class AuthController {
 
-    private final AuthService authService;
-    private final CookieUtil cookieUtil;
+        private final AuthService authService;
+        private final CookieUtil cookieUtil;
+        private final ReactiveCommandInvoker commandInvoker;
 
-    @Value("${jwt.expiration:86400000}")
-    private Long jwtExpiration;
+        @Value("${jwt.expiration:86400000}")
+        private Long jwtExpiration;
 
-    /**
-     * Login endpoint - validates credentials and returns JWT
-     */
-    @PostMapping("/login")
-    public Mono<ResponseEntity<ApiResponse<LoginResponse>>> login(
-            @Valid @RequestBody LoginRequest request,
-            ServerHttpResponse response) {
+        /**
+         * Login endpoint - validates credentials and returns JWT
+         */
+        @PostMapping("/login")
+        public Mono<ResponseEntity<ApiResponse<LoginResponse>>> login(
+                        @Valid @RequestBody LoginRequest request,
+                        ServerHttpResponse response) {
 
-        log.info("Login request received for user: {}", request.getUsername());
+                log.info("Login request received for user: {}", request.getUsername());
 
-        return authService.login(request)
-                .map(loginResponse -> {
-                    // Create secure cookie with JWT token
-                    ResponseCookie cookie = cookieUtil.createAuthCookie(
-                            loginResponse.getToken(),
-                            jwtExpiration);
+                ReactiveCommand<LoginResponse> command = new LoginCommand(authService, request);
+                return commandInvoker.executeCommand(command)
+                                .map(loginResponse -> {
+                                        // Create secure cookie with JWT token
+                                        ResponseCookie cookie = cookieUtil.createAuthCookie(
+                                                        loginResponse.getToken(),
+                                                        jwtExpiration);
 
-                    // Add cookie to response
-                    response.addCookie(cookie);
+                                        // Add cookie to response
+                                        response.addCookie(cookie);
 
-                    log.info("Login successful for user: {}", loginResponse.getUsername());
+                                        log.info("Login successful for user: {}", loginResponse.getUsername());
 
-                    // Return JWT in both cookie AND response body
-                    return ResponseEntity.ok(
-                            ApiResponse.success("Login successful", loginResponse));
-                })
-                .onErrorResume(error -> {
-                    log.error("Login failed: {}", error.getMessage());
-                    return Mono.just(
-                            ResponseEntity
-                                    .status(HttpStatus.UNAUTHORIZED)
-                                    .body(ApiResponse.error("Invalid credentials")));
-                });
-    }
+                                        // Return JWT in both cookie AND response body
+                                        return ResponseEntity.ok(
+                                                        ApiResponse.success("Login successful", loginResponse));
+                                })
+                                .onErrorResume(error -> {
+                                        log.error("Login failed: {}", error.getMessage());
+                                        return Mono.just(
+                                                        ResponseEntity
+                                                                        .status(HttpStatus.UNAUTHORIZED)
+                                                                        .body(ApiResponse
+                                                                                        .error("Invalid credentials")));
+                                });
+        }
 
-    /**
-     * Logout endpoint - invalidates cookie
-     */
-    @PostMapping("/logout")
-    public Mono<ResponseEntity<ApiResponse<Void>>> logout(ServerHttpResponse response) {
-        log.info("Logout request received");
+        /**
+         * Logout endpoint - invalidates cookie
+         */
+        @PostMapping("/logout")
+        public Mono<ResponseEntity<ApiResponse<Void>>> logout(ServerHttpResponse response) {
+                log.info("Logout request received");
 
-        // Create cookie with Max-Age=0 to invalidate
-        ResponseCookie logoutCookie = cookieUtil.createLogoutCookie();
-        response.addCookie(logoutCookie);
+                // Create cookie with Max-Age=0 to invalidate
+                ResponseCookie logoutCookie = cookieUtil.createLogoutCookie();
+                response.addCookie(logoutCookie);
 
-        log.info("Logout successful - cookie invalidated");
+                log.info("Logout successful - cookie invalidated");
 
-        return Mono.just(
-                ResponseEntity.ok(ApiResponse.success("Logout successful", null)));
-    }
+                return Mono.just(
+                                ResponseEntity.ok(ApiResponse.success("Logout successful", null)));
+        }
 }

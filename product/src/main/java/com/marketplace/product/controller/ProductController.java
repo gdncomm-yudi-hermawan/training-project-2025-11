@@ -3,8 +3,11 @@ package com.marketplace.product.controller;
 import com.marketplace.common.command.Command;
 import com.marketplace.common.controller.BaseController;
 import com.marketplace.common.dto.ApiResponse;
+import com.marketplace.product.command.GetProductByIdCommand;
+import com.marketplace.product.command.SearchProductsCommand;
 import com.marketplace.product.command.SeedProductsCommand;
 import com.marketplace.product.dto.response.ProductResponse;
+import com.marketplace.product.document.Product;
 import com.marketplace.product.mapper.ProductMapper;
 import com.marketplace.product.service.ProductService;
 import lombok.RequiredArgsConstructor;
@@ -45,7 +48,8 @@ public class ProductController extends BaseController {
         log.info("Search products request - name: '{}', page: {}, size: {}", name, page, size);
 
         Pageable pageable = PageRequest.of(page, size);
-        Page<ProductResponse> products = productService.searchProducts(name, pageable)
+        Command<Page<Product>> command = new SearchProductsCommand(productService, name, pageable);
+        Page<ProductResponse> products = executeCommand(command)
                 .map(ProductMapper::toProductResponse);
 
         return ResponseEntity.ok(ApiResponse.success(products));
@@ -55,8 +59,8 @@ public class ProductController extends BaseController {
     public ResponseEntity<ApiResponse<ProductResponse>> getProductById(@PathVariable String id) {
         log.info("Get product request for ID: {}", id);
 
-        ProductResponse product = ProductMapper.toProductResponse(
-                productService.getProductById(id));
+        Command<Product> command = new GetProductByIdCommand(productService, id);
+        ProductResponse product = ProductMapper.toProductResponse(executeCommand(command));
 
         return ResponseEntity.ok(ApiResponse.success(product));
     }

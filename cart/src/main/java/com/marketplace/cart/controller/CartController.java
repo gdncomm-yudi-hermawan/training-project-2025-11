@@ -2,12 +2,14 @@ package com.marketplace.cart.controller;
 
 import com.marketplace.cart.command.AddToCartCommand;
 import com.marketplace.cart.command.CartCommand;
+import com.marketplace.cart.command.GetCartCommand;
 import com.marketplace.cart.command.RemoveFromCartCommand;
 import com.marketplace.cart.dto.AddToCartRequest;
 import com.marketplace.cart.dto.response.CartResponse;
 import com.marketplace.cart.entity.Cart;
 import com.marketplace.cart.mapper.CartMapper;
 import com.marketplace.cart.service.CartService;
+import com.marketplace.common.command.Command;
 import com.marketplace.common.controller.BaseController;
 import com.marketplace.common.dto.ApiResponse;
 import jakarta.validation.Valid;
@@ -57,7 +59,8 @@ public class CartController extends BaseController {
         UUID userId = UUID.fromString(userIdHeader);
         log.info("Get cart request for user: {}", userId);
 
-        Cart cart = cartService.getCart(userId);
+        Command<Cart> command = new GetCartCommand(cartService, userId);
+        Cart cart = executeCommand(command);
         CartResponse response = CartMapper.toCartResponse(cart);
 
         return ResponseEntity.ok(ApiResponse.success("Cart retrieved successfully", response));
