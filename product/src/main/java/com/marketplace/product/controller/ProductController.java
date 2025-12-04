@@ -1,7 +1,7 @@
 package com.marketplace.product.controller;
 
 import com.marketplace.common.command.Command;
-import com.marketplace.common.command.CommandInvoker;
+import com.marketplace.common.controller.BaseController;
 import com.marketplace.common.dto.ApiResponse;
 import com.marketplace.product.command.SeedProductsCommand;
 import com.marketplace.product.dto.response.ProductResponse;
@@ -22,17 +22,16 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/product")
 @RequiredArgsConstructor
-public class ProductController {
+public class ProductController extends BaseController {
 
     private final ProductService productService;
-    private final CommandInvoker commandInvoker;
 
     @PostMapping("/seed")
     public ResponseEntity<ApiResponse<String>> seedProducts() {
         log.info("Seed products request received");
 
         Command<Void> command = new SeedProductsCommand(productService);
-        commandInvoker.executeCommand(command);
+        executeCommand(command);
 
         return ResponseEntity.ok(ApiResponse.success("Products seeded successfully", "Database populated"));
     }

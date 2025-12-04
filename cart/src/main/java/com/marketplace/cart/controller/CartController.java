@@ -8,7 +8,7 @@ import com.marketplace.cart.dto.response.CartResponse;
 import com.marketplace.cart.entity.Cart;
 import com.marketplace.cart.mapper.CartMapper;
 import com.marketplace.cart.service.CartService;
-import com.marketplace.common.command.CommandInvoker;
+import com.marketplace.common.controller.BaseController;
 import com.marketplace.common.dto.ApiResponse;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,10 +27,9 @@ import java.util.UUID;
 @RestController
 @RequestMapping("/api/cart")
 @RequiredArgsConstructor
-public class CartController {
+public class CartController extends BaseController {
 
     private final CartService cartService;
-    private final CommandInvoker commandInvoker;
 
     private static final String USER_ID_HEADER = "X-User-Id";
 
@@ -43,7 +42,7 @@ public class CartController {
         log.info("Add to cart request for user: {}, product: {}", userId, request.getProductId());
 
         CartCommand command = new AddToCartCommand(cartService, userId, request);
-        Cart cart = commandInvoker.executeCommand(command);
+        Cart cart = executeCommand(command);
         CartResponse response = CartMapper.toCartResponse(cart);
 
         return ResponseEntity
@@ -73,7 +72,7 @@ public class CartController {
         log.info("Remove from cart request for user: {}, product: {}", userId, productId);
 
         CartCommand command = new RemoveFromCartCommand(cartService, userId, productId);
-        Cart cart = commandInvoker.executeCommand(command);
+        Cart cart = executeCommand(command);
         CartResponse response = CartMapper.toCartResponse(cart);
 
         return ResponseEntity.ok(ApiResponse.success("Item removed from cart successfully", response));

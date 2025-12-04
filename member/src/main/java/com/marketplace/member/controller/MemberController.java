@@ -1,7 +1,7 @@
 package com.marketplace.member.controller;
 
 import com.marketplace.common.command.Command;
-import com.marketplace.common.command.CommandInvoker;
+import com.marketplace.common.controller.BaseController;
 import com.marketplace.common.dto.ApiResponse;
 import com.marketplace.common.dto.UserDetailsResponse;
 import com.marketplace.common.dto.ValidateCredentialsRequest;
@@ -21,17 +21,16 @@ import org.springframework.web.bind.annotation.*;
 @RestController
 @RequestMapping("/api/member")
 @RequiredArgsConstructor
-public class MemberController {
+public class MemberController extends BaseController {
 
     private final MemberService memberService;
-    private final CommandInvoker commandInvoker;
 
     @PostMapping("/register")
     public ResponseEntity<ApiResponse<MemberResponse>> register(@Valid @RequestBody RegisterRequest request) {
         log.info("Registration request received for username: {}", request.getUsername());
 
         Command<MemberResponse> command = new RegisterMemberCommand(memberService, request);
-        MemberResponse response = commandInvoker.executeCommand(command);
+        MemberResponse response = executeCommand(command);
 
         return ResponseEntity
                 .status(HttpStatus.CREATED)
@@ -47,7 +46,7 @@ public class MemberController {
         log.info("Credential validation request for username: {}", request.getUsername());
 
         Command<UserDetailsResponse> command = new ValidateCredentialsCommand(memberService, request);
-        UserDetailsResponse response = commandInvoker.executeCommand(command);
+        UserDetailsResponse response = executeCommand(command);
 
         return ResponseEntity.ok(ApiResponse.success("Credentials validated", response));
     }
