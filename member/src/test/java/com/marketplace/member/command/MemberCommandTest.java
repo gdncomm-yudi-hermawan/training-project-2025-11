@@ -1,4 +1,4 @@
-package com.marketplace.member.service;
+package com.marketplace.member.command;
 
 import com.marketplace.common.dto.UserDetailsResponse;
 import com.marketplace.common.dto.ValidateCredentialsRequest;
@@ -23,7 +23,7 @@ import static org.mockito.ArgumentMatchers.any;
 import static org.mockito.Mockito.*;
 
 @ExtendWith(MockitoExtension.class)
-class MemberServiceTest {
+class MemberCommandTest {
 
     @Mock
     private MemberRepository memberRepository;
@@ -32,7 +32,10 @@ class MemberServiceTest {
     private PasswordEncoder passwordEncoder;
 
     @InjectMocks
-    private MemberService memberService;
+    private RegisterMemberCommand registerMemberCommand;
+
+    @InjectMocks
+    private ValidateCredentialsCommand validateCredentialsCommand;
 
     @Test
     void register_Success() {
@@ -54,7 +57,7 @@ class MemberServiceTest {
                 .build();
         when(memberRepository.save(any(Member.class))).thenReturn(savedMember);
 
-        MemberResponse response = memberService.register(request);
+        MemberResponse response = registerMemberCommand.execute(request);
 
         assertNotNull(response);
         assertEquals(savedMember.getId(), response.getId());
@@ -69,7 +72,7 @@ class MemberServiceTest {
 
         when(memberRepository.existsByUsername(request.getUsername())).thenReturn(true);
 
-        assertThrows(UserAlreadyExistsException.class, () -> memberService.register(request));
+        assertThrows(UserAlreadyExistsException.class, () -> registerMemberCommand.execute(request));
         verify(memberRepository, never()).save(any(Member.class));
     }
 
@@ -89,7 +92,7 @@ class MemberServiceTest {
         when(memberRepository.findByUsername(request.getUsername())).thenReturn(Optional.of(member));
         when(passwordEncoder.matches(request.getPassword(), member.getPasswordHash())).thenReturn(true);
 
-        UserDetailsResponse response = memberService.validateCredentials(request);
+        UserDetailsResponse response = validateCredentialsCommand.execute(request);
 
         assertNotNull(response);
         assertEquals(member.getId(), response.getId());
@@ -111,6 +114,7 @@ class MemberServiceTest {
         when(memberRepository.findByUsername(request.getUsername())).thenReturn(Optional.of(member));
         when(passwordEncoder.matches(request.getPassword(), member.getPasswordHash())).thenReturn(false);
 
-        assertThrows(InvalidCredentialsException.class, () -> memberService.validateCredentials(request));
+        assertThrows(InvalidCredentialsException.class, () -> validateCredentialsCommand.execute(request));
     }
 }
+

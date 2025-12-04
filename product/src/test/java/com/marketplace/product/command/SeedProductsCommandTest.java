@@ -1,31 +1,39 @@
 package com.marketplace.product.command;
 
-import com.marketplace.product.service.ProductService;
-import org.junit.jupiter.api.BeforeEach;
+import com.marketplace.product.repository.ProductRepository;
 import org.junit.jupiter.api.Test;
+import org.junit.jupiter.api.extension.ExtendWith;
+import org.mockito.InjectMocks;
 import org.mockito.Mock;
-import org.mockito.MockitoAnnotations;
+import org.mockito.junit.jupiter.MockitoExtension;
 
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
+import static org.mockito.ArgumentMatchers.anyList;
+import static org.mockito.Mockito.*;
 
+@ExtendWith(MockitoExtension.class)
 class SeedProductsCommandTest {
 
     @Mock
-    private ProductService productService;
+    private ProductRepository productRepository;
 
+    @InjectMocks
     private SeedProductsCommand command;
 
-    @BeforeEach
-    void setUp() {
-        MockitoAnnotations.openMocks(this);
-        command = new SeedProductsCommand(productService);
+    @Test
+    void seedProducts_WhenEmpty_Success() {
+        when(productRepository.count()).thenReturn(0L);
+
+        command.execute(null);
+
+        verify(productRepository, times(1)).saveAll(anyList());
     }
 
     @Test
-    void testSeedProductsCommand() {
+    void seedProducts_WhenNotEmpty_Skips() {
+        when(productRepository.count()).thenReturn(5L);
+
         command.execute(null);
 
-        verify(productService, times(1)).seedProducts();
+        verify(productRepository, never()).saveAll(anyList());
     }
 }
