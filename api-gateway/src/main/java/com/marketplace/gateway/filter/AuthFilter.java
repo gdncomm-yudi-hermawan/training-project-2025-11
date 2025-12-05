@@ -78,7 +78,14 @@ public class AuthFilter implements GlobalFilter, Ordered {
             || path.startsWith("/api/member/login")
             || path.startsWith("/api/auth/login")
             || path.startsWith("/api/auth/logout")
-            || path.startsWith("/api/product/");  // Product browsing is public
+            || path.startsWith("/api/product/")  // Product browsing is public
+            // Swagger/OpenAPI documentation paths
+            || path.startsWith("/swagger-ui")
+            || path.startsWith("/v3/api-docs")
+            || path.startsWith("/member/v3/api-docs")
+            || path.startsWith("/product/v3/api-docs")
+            || path.startsWith("/cart/v3/api-docs")
+            || path.startsWith("/webjars/");
     }
 
     /**
