@@ -2,6 +2,7 @@ package com.marketplace.gateway.filter;
 
 import com.marketplace.common.util.JwtUtil;
 import com.marketplace.gateway.util.CookieUtil;
+import com.marketplace.gateway.service.TokenBlacklistService;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
@@ -23,10 +24,12 @@ public class AuthFilter implements GlobalFilter, Ordered {
 
     private final JwtUtil jwtUtil;
     private final CookieUtil cookieUtil;
+    private final TokenBlacklistService tokenBlacklistService;
 
-    public AuthFilter(JwtUtil jwtUtil, CookieUtil cookieUtil) {
+    public AuthFilter(JwtUtil jwtUtil, CookieUtil cookieUtil, TokenBlacklistService tokenBlacklistService) {
         this.jwtUtil = jwtUtil;
         this.cookieUtil = cookieUtil;
+        this.tokenBlacklistService = tokenBlacklistService;
     }
 
     @Override
@@ -46,15 +49,25 @@ public class AuthFilter implements GlobalFilter, Ordered {
             return exchange.getResponse().setComplete();
         }
 
-        try {
-            jwtUtil.validateToken(token);
-        } catch (Exception e) {
-            log.warn("Invalid token for path {}: {}", path, e.getMessage());
-            exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
-            return exchange.getResponse().setComplete();
-        }
+        // Check if token is blacklisted
+        return tokenBlacklistService.isBlacklisted(token)
+            .flatMap(isBlacklisted -> {
+                if (isBlacklisted) {
+                    log.warn("Token is blacklisted for path: {}", path);
+                    exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+                    return exchange.getResponse().setComplete();
+                }
 
-        return chain.filter(exchange);
+                try {
+                    jwtUtil.validateToken(token);
+                } catch (Exception e) {
+                    log.warn("Invalid token for path {}: {}", path, e.getMessage());
+                    exchange.getResponse().setStatusCode(HttpStatus.UNAUTHORIZED);
+                    return exchange.getResponse().setComplete();
+                }
+
+                return chain.filter(exchange);
+            });
     }
 
     /**

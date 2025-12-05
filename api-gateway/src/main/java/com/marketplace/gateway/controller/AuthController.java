@@ -16,11 +16,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.http.server.reactive.ServerHttpResponse;
 import org.springframework.web.bind.annotation.*;
 import reactor.core.publisher.Mono;
+import com.marketplace.gateway.service.TokenBlacklistService;
+import org.springframework.http.HttpCookie;
+import org.springframework.http.HttpHeaders;
+import org.springframework.web.server.ServerWebExchange;
 
-/**
- * Authentication controller for API Gateway.
- * Handles login and logout endpoints.
- */
 @Slf4j
 @RestController
 @RequestMapping("/api/auth")
@@ -29,6 +29,7 @@ public class AuthController {
 
         private final CookieUtil cookieUtil;
         private final ReactiveCommandExecutor commandExecutor;
+        private final TokenBlacklistService tokenBlacklistService;
 
         @Value("${jwt.expiration:86400000}")
         private Long jwtExpiration;
@@ -70,19 +71,36 @@ public class AuthController {
         }
 
         /**
-         * Logout endpoint - invalidates cookie.
+         * Logout endpoint - invalidates cookie and blacklists token.
          */
         @PostMapping("/logout")
-        public Mono<ResponseEntity<ApiResponse<Void>>> logout(ServerHttpResponse response) {
+        public Mono<ResponseEntity<ApiResponse<Void>>> logout(ServerWebExchange exchange) {
                 log.info("Logout request received");
 
-                // Create cookie with Max-Age=0 to invalidate
-                ResponseCookie logoutCookie = cookieUtil.createLogoutCookie();
-                response.addCookie(logoutCookie);
+                String token = extractToken(exchange);
 
-                log.info("Logout successful - cookie invalidated");
+                return (token != null ? tokenBlacklistService.blacklistToken(token) : Mono.just(false))
+                        .map(blacklisted -> {
+                                // Create cookie with Max-Age=0 to invalidate
+                                ResponseCookie logoutCookie = cookieUtil.createLogoutCookie();
+                                exchange.getResponse().addCookie(logoutCookie);
 
-                return Mono.just(
-                                ResponseEntity.ok(ApiResponse.success("Logout successful", null)));
+                                log.info("Logout successful - cookie invalidated, token blacklisted: {}", blacklisted);
+
+                                return ResponseEntity.ok(ApiResponse.success("Logout successful", null));
+                        });
+        }
+
+        private String extractToken(ServerWebExchange exchange) {
+                HttpCookie cookie = exchange.getRequest().getCookies().getFirst(cookieUtil.getAuthCookieName());
+                if (cookie != null) {
+                        return cookie.getValue();
+                }
+
+                String authHeader = exchange.getRequest().getHeaders().getFirst(HttpHeaders.AUTHORIZATION);
+                if (authHeader != null && authHeader.startsWith("Bearer ")) {
+                        return authHeader.substring(7);
+                }
+                return null;
         }
 }
