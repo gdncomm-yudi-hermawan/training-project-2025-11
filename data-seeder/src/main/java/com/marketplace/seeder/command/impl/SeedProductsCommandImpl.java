@@ -19,6 +19,7 @@ import java.util.List;
 public class SeedProductsCommandImpl implements SeedProductsCommand {
 
     private final ProductRepository productRepository;
+    private final com.marketplace.seeder.repository.ProductSearchRepository productSearchRepository;
     private final Faker faker;
 
     private static final int BATCH_SIZE = 1000;
@@ -90,7 +91,8 @@ public class SeedProductsCommandImpl implements SeedProductsCommand {
             batch.add(product);
 
             if (batch.size() >= BATCH_SIZE) {
-                productRepository.saveAll(batch);
+                List<Product> savedProducts = productRepository.saveAll(batch);
+                saveToElasticSearch(savedProducts);
                 createdCount += batch.size();
                 log.info("Batch {} completed. Progress: {}/{}", batchNumber++, createdCount, productsToCreate);
                 batch.clear();
@@ -99,7 +101,8 @@ public class SeedProductsCommandImpl implements SeedProductsCommand {
 
         // Save remaining products
         if (!batch.isEmpty()) {
-            productRepository.saveAll(batch);
+            List<Product> savedProducts = productRepository.saveAll(batch);
+            saveToElasticSearch(savedProducts);
             createdCount += batch.size();
             log.info("Final batch completed. Total created: {}", createdCount);
         }
@@ -192,6 +195,20 @@ public class SeedProductsCommandImpl implements SeedProductsCommand {
         
         return String.format("%s %s in %s category. Features: %s and %s. %s",
                 quality, productName, category, feature1, feature2, faker.lorem().sentence(10));
+    }
+
+    private void saveToElasticSearch(List<Product> products) {
+        List<com.marketplace.seeder.document.ProductSearchDoc> searchDocs = products.stream()
+                .map(p -> com.marketplace.seeder.document.ProductSearchDoc.builder()
+                        .id(p.getId())
+                        .name(p.getName())
+                        .description(p.getDescription())
+                        .price(p.getPrice())
+                        .category(p.getCategory())
+                        .stock(p.getStock())
+                        .build())
+                .toList();
+        productSearchRepository.saveAll(searchDocs);
     }
 }
 

@@ -14,8 +14,14 @@ import org.springframework.test.web.servlet.MockMvc;
 import java.math.BigDecimal;
 
 import static org.hamcrest.Matchers.*;
+import static org.mockito.ArgumentMatchers.any;
+import static org.mockito.Mockito.when;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
+import org.springframework.data.domain.PageImpl;
+import java.util.List;
+import java.util.ArrayList;
+import com.marketplace.product.document.ProductSearchDoc;
 
 @SpringBootTest
 @AutoConfigureMockMvc
@@ -27,6 +33,9 @@ class ProductControllerIntegrationTest {
 
         @Autowired
         private ProductRepository productRepository;
+
+        @org.springframework.boot.test.mock.mockito.MockBean
+        private com.marketplace.product.repository.ProductSearchRepository productSearchRepository;
 
         @BeforeEach
         void setUp() {
@@ -70,6 +79,14 @@ class ProductControllerIntegrationTest {
                 productRepository.save(Product.builder().name("Product 2").price(new BigDecimal("20")).build());
                 productRepository.save(Product.builder().name("Product 3").price(new BigDecimal("30")).build());
 
+                List<ProductSearchDoc> docs = new ArrayList<>();
+                docs.add(ProductSearchDoc.builder().name("Product 1").price(new BigDecimal("10")).build());
+                docs.add(ProductSearchDoc.builder().name("Product 2").price(new BigDecimal("20")).build());
+                docs.add(ProductSearchDoc.builder().name("Product 3").price(new BigDecimal("30")).build());
+
+                when(productSearchRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
+                                .thenReturn(new PageImpl<>(docs));
+
                 mockMvc.perform(get("/api/product/search")
                                 .contentType(MediaType.APPLICATION_JSON))
                                 .andExpect(status().isOk())
@@ -85,6 +102,13 @@ class ProductControllerIntegrationTest {
                 productRepository.save(Product.builder().name("Business Laptop").price(new BigDecimal("799")).build());
                 productRepository.save(Product.builder().name("Desktop Computer").price(new BigDecimal("599")).build());
 
+                List<ProductSearchDoc> docs = new ArrayList<>();
+                docs.add(ProductSearchDoc.builder().name("Gaming Laptop").price(new BigDecimal("999")).build());
+                docs.add(ProductSearchDoc.builder().name("Business Laptop").price(new BigDecimal("799")).build());
+
+                when(productSearchRepository.findByNameOrDescriptionContaining(any(), any(), any()))
+                                .thenReturn(new PageImpl<>(docs));
+
                 mockMvc.perform(get("/api/product/search")
                                 .param("name", "laptop")
                                 .contentType(MediaType.APPLICATION_JSON))
@@ -99,6 +123,13 @@ class ProductControllerIntegrationTest {
                 productRepository.save(Product.builder().name("iPhone Pro").price(new BigDecimal("999")).build());
                 productRepository.save(Product.builder().name("IPHONE Mini").price(new BigDecimal("799")).build());
 
+                List<ProductSearchDoc> docs = new ArrayList<>();
+                docs.add(ProductSearchDoc.builder().name("iPhone Pro").price(new BigDecimal("999")).build());
+                docs.add(ProductSearchDoc.builder().name("IPHONE Mini").price(new BigDecimal("799")).build());
+
+                when(productSearchRepository.findByNameOrDescriptionContaining(any(), any(), any()))
+                                .thenReturn(new PageImpl<>(docs));
+
                 mockMvc.perform(get("/api/product/search")
                                 .param("name", "IPHONE")
                                 .contentType(MediaType.APPLICATION_JSON))
@@ -109,6 +140,9 @@ class ProductControllerIntegrationTest {
         @Test
         void searchProducts_NoMatches_ReturnsEmptyPage() throws Exception {
                 productRepository.save(Product.builder().name("Mouse").price(new BigDecimal("29")).build());
+
+                when(productSearchRepository.findByNameOrDescriptionContaining(any(), any(), any()))
+                                .thenReturn(new PageImpl<>(new ArrayList<>()));
 
                 mockMvc.perform(get("/api/product/search")
                                 .param("name", "keyboard")
@@ -121,12 +155,31 @@ class ProductControllerIntegrationTest {
 
         @Test
         void searchProducts_WithPagination_ReturnsPagedResults() throws Exception {
+                List<ProductSearchDoc> allDocs = new ArrayList<>();
                 for (int i = 1; i <= 15; i++) {
                         productRepository.save(Product.builder()
                                         .name("Product " + i)
                                         .price(new BigDecimal(i * 10))
                                         .build());
+                        allDocs.add(ProductSearchDoc.builder().name("Product " + i).price(new BigDecimal(i * 10))
+                                        .build());
                 }
+
+                // Mock first page
+                List<ProductSearchDoc> page1Docs = allDocs.subList(0, 5);
+                when(productSearchRepository.findAll(org.mockito.ArgumentMatchers
+                                .argThat((org.springframework.data.domain.Pageable p) -> p != null
+                                                && p.getPageNumber() == 0)))
+                                .thenReturn(new PageImpl<>(page1Docs,
+                                                org.springframework.data.domain.PageRequest.of(0, 5), 15));
+
+                // Mock second page
+                List<ProductSearchDoc> page2Docs = allDocs.subList(5, 10);
+                when(productSearchRepository.findAll(org.mockito.ArgumentMatchers
+                                .argThat((org.springframework.data.domain.Pageable p) -> p != null
+                                                && p.getPageNumber() == 1)))
+                                .thenReturn(new PageImpl<>(page2Docs,
+                                                org.springframework.data.domain.PageRequest.of(1, 5), 15));
 
                 // First page
                 mockMvc.perform(get("/api/product/search")
@@ -151,12 +204,20 @@ class ProductControllerIntegrationTest {
 
         @Test
         void searchProducts_DefaultPagination_Uses10ItemsPerPage() throws Exception {
+                List<ProductSearchDoc> docs = new ArrayList<>();
                 for (int i = 1; i <= 15; i++) {
                         productRepository.save(Product.builder()
                                         .name("Item " + i)
                                         .price(new BigDecimal(i))
                                         .build());
+                        if (i <= 10) {
+                                docs.add(ProductSearchDoc.builder().name("Item " + i).price(new BigDecimal(i)).build());
+                        }
                 }
+
+                when(productSearchRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
+                                .thenReturn(new PageImpl<>(docs, org.springframework.data.domain.PageRequest.of(0, 10),
+                                                15));
 
                 mockMvc.perform(get("/api/product/search")
                                 .contentType(MediaType.APPLICATION_JSON))
@@ -171,6 +232,14 @@ class ProductControllerIntegrationTest {
                 productRepository.save(Product.builder().name("Phone Charger").price(new BigDecimal("29")).build());
                 productRepository.save(Product.builder().name("Microphone").price(new BigDecimal("99")).build());
 
+                List<ProductSearchDoc> docs = new ArrayList<>();
+                docs.add(ProductSearchDoc.builder().name("Smartphone Case").price(new BigDecimal("19")).build());
+                docs.add(ProductSearchDoc.builder().name("Phone Charger").price(new BigDecimal("29")).build());
+                docs.add(ProductSearchDoc.builder().name("Microphone").price(new BigDecimal("99")).build());
+
+                when(productSearchRepository.findByNameOrDescriptionContaining(any(), any(), any()))
+                                .thenReturn(new PageImpl<>(docs));
+
                 mockMvc.perform(get("/api/product/search")
                                 .param("name", "phone")
                                 .contentType(MediaType.APPLICATION_JSON))
@@ -182,6 +251,13 @@ class ProductControllerIntegrationTest {
         void searchProducts_EmptyName_ReturnsAllProducts() throws Exception {
                 productRepository.save(Product.builder().name("Product A").price(new BigDecimal("10")).build());
                 productRepository.save(Product.builder().name("Product B").price(new BigDecimal("20")).build());
+
+                List<ProductSearchDoc> docs = new ArrayList<>();
+                docs.add(ProductSearchDoc.builder().name("Product A").price(new BigDecimal("10")).build());
+                docs.add(ProductSearchDoc.builder().name("Product B").price(new BigDecimal("20")).build());
+
+                when(productSearchRepository.findAll(any(org.springframework.data.domain.Pageable.class)))
+                                .thenReturn(new PageImpl<>(docs));
 
                 mockMvc.perform(get("/api/product/search")
                                 .param("name", "")
