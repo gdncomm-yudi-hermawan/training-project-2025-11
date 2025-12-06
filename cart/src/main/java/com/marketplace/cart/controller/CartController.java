@@ -32,51 +32,51 @@ import java.util.UUID;
 @RequestMapping("/api/cart")
 public class CartController extends BaseCommandController {
 
-        private static final String USER_ID_HEADER = "X-User-Id";
+    private static final String USER_ID_HEADER = "X-User-Id";
 
-        @PostMapping("/add")
-        public ResponseEntity<ApiResponse<CartResponse>> addToCart(
-                        @RequestHeader(USER_ID_HEADER) String userIdHeader,
-                        @Valid @RequestBody AddToCartRequest request) {
+    @PostMapping("/add")
+    public ResponseEntity<ApiResponse<CartResponse>> addToCart(
+            @RequestHeader(USER_ID_HEADER) String userIdHeader,
+            @Valid @RequestBody AddToCartRequest request) {
 
-                UUID userId = UUID.fromString(userIdHeader);
-                log.info("Add to cart request for user: {}, product: {}", userId, request.getProductId());
+        UUID userId = UUID.fromString(userIdHeader);
+        log.info("Add to cart request for user: {}, product: {}", userId, request.getProductId());
 
-                AddToCartCommandRequest commandRequest = AddToCartCommandRequest.builder()
-                                .userId(userId)
-                                .addToCartRequest(request)
-                                .build();
+        AddToCartCommandRequest commandRequest = AddToCartCommandRequest.builder()
+                .userId(userId)
+                .addToCartRequest(request)
+                .build();
 
-                CartResponse response = execute(AddToCartCommand.class, commandRequest);
-                return createdResponse("Item added to cart", response);
-        }
+        CartResponse response = execute(AddToCartCommand.class, commandRequest);
+        return createdResponse("Item added to cart", response);
+    }
 
-        @GetMapping
-        public ResponseEntity<ApiResponse<CartResponse>> getCart(
-                        @RequestHeader(USER_ID_HEADER) String userIdHeader) {
+    @GetMapping
+    public ResponseEntity<ApiResponse<CartResponse>> getCart(
+            @RequestHeader(USER_ID_HEADER) String userIdHeader) {
 
-                UUID userId = UUID.fromString(userIdHeader);
-                log.info("Get cart request for user: {}", userId);
+        UUID userId = UUID.fromString(userIdHeader);
+        log.info("Get cart request for user: {}", userId);
 
-                GetCartRequest request = GetCartRequest.builder().userId(userId).build();
-                CartResponse response = execute(GetCartCommand.class, request);
-                return okResponse("Cart retrieved successfully", response);
-        }
+        GetCartRequest request = GetCartRequest.builder().userId(userId).build();
+        CartResponse response = execute(GetCartCommand.class, request);
+        return okResponse("Cart retrieved successfully", response);
+    }
 
-        @DeleteMapping("/{productId}")
-        public ResponseEntity<ApiResponse<CartResponse>> removeFromCart(
-                        @RequestHeader(USER_ID_HEADER) String userIdHeader,
-                        @PathVariable String productId) {
+    @DeleteMapping("/{productId}")
+    public ResponseEntity<ApiResponse<CartResponse>> removeFromCart(
+            @RequestHeader(USER_ID_HEADER) String userIdHeader,
+            @PathVariable String productId) {
 
-                UUID userId = UUID.fromString(userIdHeader);
-                log.info("Remove from cart request for user: {}, product: {}", userId, productId);
+        UUID userId = UUID.fromString(userIdHeader);
+        log.info("Remove from cart request for user: {}, product: {}", userId, productId);
 
-                RemoveFromCartRequest request = RemoveFromCartRequest.builder()
-                                .userId(userId)
-                                .productId(productId)
-                                .build();
+        RemoveFromCartRequest request = RemoveFromCartRequest.builder()
+                .userId(userId)
+                .productId(productId)
+                .build();
 
-                CartResponse response = execute(RemoveFromCartCommand.class, request);
-                return okResponse("Item removed from cart", response);
-        }
+        CartResponse response = execute(RemoveFromCartCommand.class, request);
+        return okResponse("Item removed from cart", response);
+    }
 }
