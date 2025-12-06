@@ -9,6 +9,7 @@ import com.marketplace.cart.entity.Cart;
 import com.marketplace.cart.entity.CartItem;
 import com.marketplace.cart.mapper.CartMapper;
 import com.marketplace.cart.repository.CartRepository;
+import com.marketplace.common.aspect.Auditable;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -26,6 +27,7 @@ public class AddToCartCommandImpl implements AddToCartCommand {
 
     @Override
     @Transactional
+    @Auditable(action = "ADD_TO_CART", description = "Add item to shopping cart")
     public CartResponse execute(AddToCartCommandRequest request) {
         var userId = request.getUserId();
         var addRequest = request.getAddToCartRequest();

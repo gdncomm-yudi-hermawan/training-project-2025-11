@@ -1,5 +1,6 @@
 package com.marketplace.member.command.impl;
 
+import com.marketplace.common.aspect.Auditable;
 import com.marketplace.member.command.RegisterMemberCommand;
 import com.marketplace.member.dto.MemberResponse;
 import com.marketplace.member.dto.RegisterRequest;
@@ -22,6 +23,7 @@ public class RegisterMemberCommandImpl implements RegisterMemberCommand {
 
     @Override
     @Transactional
+    @Auditable(action = "USER_REGISTER", description = "New user registration")
     public MemberResponse execute(RegisterRequest request) {
         log.info("Registering new user with email: {}", request.getEmail());
 
