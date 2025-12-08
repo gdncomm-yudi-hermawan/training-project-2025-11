@@ -25,11 +25,11 @@ import java.util.List;
 @Slf4j
 @Component
 @Order(-1)
-public class GlobalExceptionHandler implements ErrorWebExceptionHandler {
+public class GatewayWebExceptionHandler implements ErrorWebExceptionHandler {
 
     private final ObjectMapper objectMapper;
 
-    public GlobalExceptionHandler(ObjectMapper objectMapper) {
+    public GatewayWebExceptionHandler(ObjectMapper objectMapper) {
         this.objectMapper = objectMapper;
     }
 
@@ -49,7 +49,8 @@ public class GlobalExceptionHandler implements ErrorWebExceptionHandler {
                 // Handle validation errors
                 status = HttpStatus.BAD_REQUEST;
                 List<String> details = new ArrayList<>();
-                bindEx.getFieldErrors().forEach(error -> details.add(error.getField() + ": " + error.getDefaultMessage()));
+                bindEx.getFieldErrors()
+                        .forEach(error -> details.add(error.getField() + ": " + error.getDefaultMessage()));
                 apiResponse = ApiResponse.error("Validation failed", details);
             }
             case ServerWebInputException serverWebInputException -> {

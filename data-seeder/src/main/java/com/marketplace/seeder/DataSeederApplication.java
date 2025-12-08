@@ -7,6 +7,8 @@ import org.springframework.context.annotation.ComponentScan;
 import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 import org.springframework.data.mongodb.repository.config.EnableMongoRepositories;
 
+import org.springframework.data.elasticsearch.repository.config.EnableElasticsearchRepositories;
+
 @SpringBootApplication
 @ComponentScan(basePackages = {
         "com.marketplace.seeder",
@@ -15,10 +17,10 @@ import org.springframework.data.mongodb.repository.config.EnableMongoRepositorie
 @EntityScan(basePackages = "com.marketplace.member.entity")
 @EnableJpaRepositories(basePackages = "com.marketplace.member.repository")
 @EnableMongoRepositories(basePackages = "com.marketplace.product.repository")
+@EnableElasticsearchRepositories(basePackages = "com.marketplace.product.repository")
 public class DataSeederApplication {
 
     public static void main(String[] args) {
         SpringApplication.run(DataSeederApplication.class, args);
     }
 }
-
